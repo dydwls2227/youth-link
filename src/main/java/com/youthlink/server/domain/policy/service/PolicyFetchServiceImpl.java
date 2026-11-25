@@ -3,20 +3,16 @@ package com.youthlink.server.domain.policy.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.youthlink.server.domain.policy.code.PolicyErrorCode;
 import com.youthlink.server.domain.policy.config.YouthPolicyApiProperties;
-import com.youthlink.server.domain.policy.converter.PolicyConverter;
 import com.youthlink.server.domain.policy.dto.YouthPolicyResponse;
 import com.youthlink.server.domain.policy.entity.Policy;
 import com.youthlink.server.domain.policy.exception.PolicyException;
-import com.youthlink.server.domain.policy.repository.PolicyRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestClient;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 @Slf4j
 @Service
@@ -27,8 +23,9 @@ public class PolicyFetchServiceImpl implements PolicyFetchService {
     private static final int PAGE_SIZE = 100;
 
     private final RestClient youthPolicyRestClient;
-    private final PolicyRepository policyRepository;
     private final YouthPolicyApiProperties props;
+    // 쓰기 경로를 별도 빈에 둬서 트랜잭션 프록시를 반드시 거치게 한다. (PolicyUpsertService 주석 참고)
+    private final PolicyUpsertService policyUpsertService;
 
     @Override
     public List<Policy> fetchAndSave() {
@@ -39,8 +36,7 @@ public class PolicyFetchServiceImpl implements PolicyFetchService {
             List<YouthPolicyResponse.PolicyItem> items = fetchPage(page);
             if (items == null || items.isEmpty()) break;
 
-            List<Policy> pageResult = saveAll(items);
-            changedPolicies.addAll(pageResult);
+            changedPolicies.addAll(policyUpsertService.upsertPage(items));
 
             if (items.size() < PAGE_SIZE) break;
             page++;
@@ -68,28 +64,5 @@ public class PolicyFetchServiceImpl implements PolicyFetchService {
             log.error("온통청년 API 호출 실패 (page={}): {}", pageNum, e.getMessage());
             throw new PolicyException(PolicyErrorCode.POLICY_FETCH_FAILED);
         }
-    }
-
-    @Transactional
-    public List<Policy> saveAll(List<YouthPolicyResponse.PolicyItem> items) {
-        List<Policy> changed = new ArrayList<>();
-
-        for (YouthPolicyResponse.PolicyItem item : items) {
-            if (item.getPlcyNo() == null || item.getPlcyNo().isBlank()) continue;
-
-            Optional<Policy> existing = policyRepository.findByBizId(item.getPlcyNo());
-            if (existing.isPresent()) {
-                Policy policy = existing.get();
-                boolean isChanged = policy.update(item);
-                if (isChanged) {
-                    changed.add(policy);
-                }
-            } else {
-                Policy saved = policyRepository.save(PolicyConverter.toPolicy(item));
-                changed.add(saved);
-            }
-        }
-
-        return changed;
     }
 }
