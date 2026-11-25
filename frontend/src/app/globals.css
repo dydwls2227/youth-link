@@ -1,0 +1,226 @@
+@import "tailwindcss";
+
+/* 수동 테마 토글을 쓰기 위해 dark: 를 .dark 클래스 기준으로 바꾼다. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * 본문 폰트는 Pretendard(가변)를 쓴다. 한글 UI 가독성 때문이다.
+ * 스타일시트는 app/layout.tsx 의 <link> 로 불러온다. 유니코드 범위별로 쪼갠 dynamic-subset
+ * 배포본이라 필요한 조각만 받는다(전체 woff2 한 덩어리는 2MB가 넘는다).
+ * CDN 을 못 받아도 아래 --font-sans 의 시스템 폰트로 자연스럽게 폴백된다.
+ */
+
+:root {
+  --bg: #f6f8f8;
+  --surface: #ffffff;
+  --surface-2: #eef1f1;
+  --line: #e1e6e6;
+  --line-strong: #cdd5d5;
+  --fg: #0d1313;
+  --muted: #687373;
+  --brand: #0d9488;
+  --brand-hover: #0f766e;
+  --brand-soft: #e3fbf6;
+  --brand-fg: #ffffff;
+  --warn: #b45309;
+  --warn-soft: #fef4e2;
+  --danger: #dc2626;
+  --danger-soft: #fdeaea;
+  --ring: #14b8a6;
+}
+
+:root[data-theme="dark"],
+.dark {
+  --bg: #0a0c0c;
+  --surface: #121616;
+  --surface-2: #1a1f1f;
+  --line: #262d2d;
+  --line-strong: #394242;
+  --fg: #eaf0ef;
+  --muted: #8b9796;
+  --brand: #2dd4bf;
+  --brand-hover: #5eead4;
+  --brand-soft: #0d2b28;
+  --brand-fg: #04201c;
+  --warn: #fbbf24;
+  --warn-soft: #2a2110;
+  --danger: #f87171;
+  --danger-soft: #2a1414;
+  --ring: #2dd4bf;
+}
+
+@theme inline {
+  --font-sans: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont,
+    "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
+
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+  --color-brand-soft: var(--brand-soft);
+  --color-brand-fg: var(--brand-fg);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+
+  --radius-xl: 0.875rem;
+  --radius-2xl: 1.125rem;
+  --radius-3xl: 1.5rem;
+}
+
+* {
+  border-color: var(--line);
+}
+
+html {
+  color-scheme: light;
+  -webkit-text-size-adjust: 100%;
+}
+
+html.dark,
+html[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-sans);
+  font-feature-settings: "ss01", "tnum";
+  letter-spacing: -0.011em;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--brand);
+  color: var(--brand-fg);
+}
+
+:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* 데스크톱에서만 얇은 스크롤바를 쓴다. 모바일은 OS 기본값이 더 자연스럽다. */
+@media (hover: hover) {
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--line-strong);
+    border: 3px solid transparent;
+    background-clip: content-box;
+    border-radius: 999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--muted);
+    background-clip: content-box;
+  }
+}
+
+/* 랜딩 배경용 은은한 그라디언트 메시 */
+.mesh {
+  background-image:
+    radial-gradient(60rem 30rem at 12% -10%, color-mix(in oklab, var(--brand) 22%, transparent), transparent 60%),
+    radial-gradient(45rem 28rem at 92% 6%, color-mix(in oklab, var(--brand) 13%, transparent), transparent 62%);
+}
+
+/* AI 답변(마크다운) 타이포그래피 */
+.md {
+  font-size: 0.9375rem;
+  line-height: 1.75;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+.md > * + * {
+  margin-top: 0.75rem;
+}
+.md h2,
+.md h3 {
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  margin-top: 1.5rem;
+  font-size: 1rem;
+}
+.md h2:first-child,
+.md h3:first-child {
+  margin-top: 0;
+}
+.md h3 {
+  color: var(--fg);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.md strong {
+  font-weight: 650;
+}
+.md ul,
+.md ol {
+  padding-left: 1.125rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.md ul {
+  list-style: none;
+  padding-left: 0;
+}
+.md ul > li {
+  position: relative;
+  padding-left: 0.875rem;
+}
+.md ul > li::before {
+  content: "";
+  position: absolute;
+  left: 0.125rem;
+  top: 0.7em;
+  width: 4px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--brand);
+}
+.md ol {
+  list-style: decimal;
+}
+.md a {
+  color: var(--brand);
+  text-underline-offset: 3px;
+  text-decoration: underline;
+}
+.md blockquote {
+  border-left: 2px solid var(--brand);
+  background: var(--surface-2);
+  padding: 0.625rem 0.875rem;
+  border-radius: 0 0.5rem 0.5rem 0;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+.md code {
+  background: var(--surface-2);
+  padding: 0.1rem 0.35rem;
+  border-radius: 0.3rem;
+  font-size: 0.875em;
+}
+.md hr {
+  border-top: 1px solid var(--line);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
