@@ -27,6 +27,27 @@ class RegionMetadataTest {
     }
 
     @Test
+    @DisplayName("통합된 광주·전남은 하나의 지역 키로 모인다")
+    void mergedGwangjuAndJeonnamCollapseIntoOneRegion() {
+        // 실제 수집 데이터에는 구 코드 29(광주)·46(전남)이 전혀 없고 통합 코드 12만 쓰인다.
+        // 회원 프로필의 시/도 표기는 아직 분리돼 있으므로 양쪽을 같은 키로 모아야 매칭된다.
+        String merged = RegionMetadata.keyOfSido("전남광주통합특별시");
+        assertThat(RegionMetadata.keysOf("12110,12130")).containsExactly(merged);
+        assertThat(RegionMetadata.keyOfSido("광주광역시")).isEqualTo(merged);
+        assertThat(RegionMetadata.keyOfSido("전라남도")).isEqualTo(merged);
+        assertThat(RegionMetadata.labelOf("12110")).isEqualTo("전남광주통합특별시");
+    }
+
+    @Test
+    @DisplayName("온통청년 API 가 내려주는 5자리 코드도 시/도로 환원된다")
+    void fiveDigitCodesAreResolved() {
+        // 실제 응답의 zipCd 는 10자리 법정동코드가 아니라 5자리 코드를 콤마로 이어 붙인 형태다.
+        assertThat(RegionMetadata.keysOf("28110,28140,28177"))
+                .containsExactly(RegionMetadata.keyOfSido("인천광역시"));
+        assertThat(RegionMetadata.labelOf("28125")).isEqualTo("인천광역시");
+    }
+
+    @Test
     @DisplayName("대상 지역을 특정할 수 없으면 전국으로 본다")
     void blankZipCodeFallsBackToNationwide() {
         assertThat(RegionMetadata.keysOf(null)).containsExactly(RegionMetadata.NATIONWIDE_KEY);

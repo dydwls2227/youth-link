@@ -40,14 +40,17 @@ public final class RegionMetadata {
 
     /**
      * 법정동코드 앞 2자리 → 정규화 코드.
-     * 행정구역 개편 전/후 코드(강원 42·51, 전북 45·52)는 한쪽으로 모아 같은 지역으로 취급한다.
+     * 행정구역 개편 전/후 코드는 한쪽으로 모아 같은 지역으로 취급한다.
+     * 강원 42·51, 전북 45·52가 그렇고, 광주 29와 전남 46은 통합 코드 12로 모은다.
+     * (실제 수집 데이터에 29·46은 더 이상 나타나지 않고 12만 쓰인다.)
      */
     private static final Map<String, String> CODE_BY_PREFIX = Map.ofEntries(
             Map.entry("11", "11"), // 서울
+            Map.entry("12", "12"), // 전남광주통합특별시
             Map.entry("26", "26"), // 부산
             Map.entry("27", "27"), // 대구
             Map.entry("28", "28"), // 인천
-            Map.entry("29", "29"), // 광주
+            Map.entry("29", "12"), // 광주광역시(구) → 전남광주통합특별시
             Map.entry("30", "30"), // 대전
             Map.entry("31", "31"), // 울산
             Map.entry("36", "36"), // 세종
@@ -58,7 +61,7 @@ public final class RegionMetadata {
             Map.entry("44", "44"), // 충남
             Map.entry("45", "52"), // 전라북도(구) → 전북특별자치도
             Map.entry("52", "52"), // 전북특별자치도
-            Map.entry("46", "46"), // 전남
+            Map.entry("46", "12"), // 전라남도(구) → 전남광주통합특별시
             Map.entry("47", "47"), // 경북
             Map.entry("48", "48"), // 경남
             Map.entry("50", "50")  // 제주
@@ -67,10 +70,10 @@ public final class RegionMetadata {
     /** 정규화 코드 → 대표 시/도 명칭. data.sql 의 region.sido 표기와 일치시킨다. */
     private static final Map<String, String> LABEL_BY_CODE = Map.ofEntries(
             Map.entry("11", "서울특별시"),
+            Map.entry("12", "전남광주통합특별시"),
             Map.entry("26", "부산광역시"),
             Map.entry("27", "대구광역시"),
             Map.entry("28", "인천광역시"),
-            Map.entry("29", "광주광역시"),
             Map.entry("30", "대전광역시"),
             Map.entry("31", "울산광역시"),
             Map.entry("36", "세종특별자치시"),
@@ -79,7 +82,6 @@ public final class RegionMetadata {
             Map.entry("43", "충청북도"),
             Map.entry("44", "충청남도"),
             Map.entry("52", "전북특별자치도"),
-            Map.entry("46", "전라남도"),
             Map.entry("47", "경상북도"),
             Map.entry("48", "경상남도"),
             Map.entry("50", "제주특별자치도")
@@ -94,7 +96,8 @@ public final class RegionMetadata {
             Map.entry("부산광역시", "26"), Map.entry("부산", "26"),
             Map.entry("대구광역시", "27"), Map.entry("대구", "27"),
             Map.entry("인천광역시", "28"), Map.entry("인천", "28"),
-            Map.entry("광주광역시", "29"), Map.entry("광주", "29"),
+            Map.entry("전남광주통합특별시", "12"),
+            Map.entry("광주광역시", "12"), Map.entry("광주", "12"),
             Map.entry("대전광역시", "30"), Map.entry("대전", "30"),
             Map.entry("울산광역시", "31"), Map.entry("울산", "31"),
             Map.entry("세종특별자치시", "36"), Map.entry("세종", "36"),
@@ -103,7 +106,7 @@ public final class RegionMetadata {
             Map.entry("충청북도", "43"), Map.entry("충북", "43"),
             Map.entry("충청남도", "44"), Map.entry("충남", "44"),
             Map.entry("전북특별자치도", "52"), Map.entry("전라북도", "52"), Map.entry("전북", "52"),
-            Map.entry("전라남도", "46"), Map.entry("전남", "46"),
+            Map.entry("전라남도", "12"), Map.entry("전남", "12"),
             Map.entry("경상북도", "47"), Map.entry("경북", "47"),
             Map.entry("경상남도", "48"), Map.entry("경남", "48"),
             Map.entry("제주특별자치도", "50"), Map.entry("제주도", "50"), Map.entry("제주", "50")
