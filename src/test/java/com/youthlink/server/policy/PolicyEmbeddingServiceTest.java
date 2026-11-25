@@ -2,6 +2,7 @@ package com.youthlink.server.policy;
 
 import com.youthlink.server.domain.policy.entity.Policy;
 import com.youthlink.server.domain.policy.service.PolicyEmbeddingServiceImpl;
+import com.youthlink.server.domain.policy.support.RegionMetadata;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -53,7 +54,7 @@ class PolicyEmbeddingServiceTest {
         assertThat(metadata).containsKey("policyName");
         assertThat(metadata).containsKey("organization");
         assertThat(metadata).containsKey("sourceUrl");
-        assertThat(metadata).containsKey("region");
+        assertThat(metadata).containsKey(RegionMetadata.LABEL_KEY);
         assertThat(metadata).containsKey("ageCondition");
         assertThat(metadata).containsKey("education");
         assertThat(metadata).containsKey("employmentStatus");
@@ -74,8 +75,48 @@ class PolicyEmbeddingServiceTest {
 
         assertThat(metadata.get("policyName")).isEqualTo("청년 일자리 도약 장려금");
         assertThat(metadata.get("organization")).isEqualTo("고용노동부");
-        assertThat(metadata.get("region")).isEqualTo("전국");
+        assertThat(metadata.get(RegionMetadata.LABEL_KEY)).isEqualTo("전국");
         assertThat(metadata.get("sourceUrl")).isEqualTo("https://example.com");
+    }
+
+    @Test
+    @DisplayName("대상 지역이 없는 정책은 전국 키가 붙어 모든 지역 회원에게 매칭된다")
+    void nationwidePolicyGetsNationwideKey() {
+        ArgumentCaptor<List<Document>> captor = ArgumentCaptor.forClass(List.class);
+        policyEmbeddingService.embedPolicies(List.of(createTestPolicy()));
+        verify(vectorStore).add(captor.capture());
+
+        Map<String, Object> metadata = captor.getValue().get(0).getMetadata();
+
+        assertThat(metadata.get(RegionMetadata.NATIONWIDE_KEY)).isEqualTo(true);
+        assertThat(metadata.get(RegionMetadata.LABEL_KEY)).isEqualTo("전국");
+    }
+
+    @Test
+    @DisplayName("법정동코드가 있으면 시/도 코드 키로 전개되어 거주지 필터에 걸린다")
+    void zipCodeIsExpandedIntoSidoKeys() {
+        // 1168010100 = 서울특별시 강남구 역삼동, 4111100000 = 경기도 수원시
+        Policy policy = Policy.builder()
+                .bizId("R-REGION-TEST")
+                .polyBizSjnm("청년 월세 지원")
+                .cnsgNmor("서울특별시")
+                .polyUrl("https://example.com")
+                .ctpvNm("서울특별시청")
+                .zipCd("1168010100,4111100000")
+                .build();
+
+        ArgumentCaptor<List<Document>> captor = ArgumentCaptor.forClass(List.class);
+        policyEmbeddingService.embedPolicies(List.of(policy));
+        verify(vectorStore).add(captor.capture());
+
+        Map<String, Object> metadata = captor.getValue().get(0).getMetadata();
+
+        // 회원 거주지 "서울특별시"로 조회할 키가 실제로 붙어 있어야 한다.
+        assertThat(metadata.get(RegionMetadata.keyOfSido("서울특별시"))).isEqualTo(true);
+        assertThat(metadata.get(RegionMetadata.keyOfSido("경기도"))).isEqualTo(true);
+        assertThat(metadata).doesNotContainKey(RegionMetadata.keyOfSido("부산광역시"));
+        assertThat(metadata).doesNotContainKey(RegionMetadata.NATIONWIDE_KEY);
+        assertThat(metadata.get(RegionMetadata.LABEL_KEY)).isEqualTo("서울특별시 외 1곳");
     }
 
     @Test

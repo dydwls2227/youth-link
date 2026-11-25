@@ -20,6 +20,7 @@ public class PolicyConverter {
                 .cnsgNmor(item.toCnsgNmor())
                 .polyUrl(item.toPolyUrl())
                 .ctpvNm(item.toCtpvNm())
+                .zipCd(item.getZipCd())
                 .build();
     }
 

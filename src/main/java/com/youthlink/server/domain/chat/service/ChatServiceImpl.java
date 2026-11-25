@@ -8,6 +8,7 @@ import com.youthlink.server.domain.chat.dto.ChatResponse;
 import com.youthlink.server.domain.chat.dto.PolicySource;
 import com.youthlink.server.domain.member.entity.Member;
 import com.youthlink.server.domain.member.repository.MemberRepository;
+import com.youthlink.server.domain.policy.support.RegionMetadata;
 import com.youthlink.server.domain.region.entity.Region;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -120,12 +121,16 @@ public class ChatServiceImpl implements ChatService {
                     .filter(r -> r != null && !r.isBlank())
                     .orElse(null);
 
-            if (region != null) {
-                List<Document> filtered = runSimilaritySearch(query, buildRegionFilter(region));
+            Filter.Expression regionFilter = buildRegionFilter(region);
+            if (regionFilter != null) {
+                // 1단계: 거주 지역(+전국) 정책으로 하드 필터링한 검색
+                List<Document> filtered = runSimilaritySearch(query, regionFilter);
                 if (!filtered.isEmpty()) {
                     return filtered;
                 }
+                log.debug("지역 필터 검색 0건 - 전체 검색으로 폴백 (region={})", region);
             }
+            // 2단계: 필터를 완화한 전체 검색
             return runSimilaritySearch(query, null);
         } catch (Exception e) {
             log.warn("벡터 검색 실패: {}", e.getMessage());
@@ -143,8 +148,20 @@ public class ChatServiceImpl implements ChatService {
         return vectorStore.similaritySearch(builder.build());
     }
 
-    private Filter.Expression buildRegionFilter(String region) {
-        return new FilterExpressionBuilder().eq("region", region).build();
+    /**
+     * 거주 지역 정책 + 전국 단위 정책만 남기는 필터를 만든다.
+     *
+     * <p>임베딩 시 {@code region_<시도코드>=true} 로 전개해둔 키를 그대로 질의한다.
+     * 전국 사업을 함께 통과시키지 않으면 중앙부처 정책이 전부 탈락하므로 OR 로 묶는다.
+     * 표에 없는 지역 표기는 필터링할 근거가 없다는 뜻이므로 {@code null} 을 돌려 필터를 생략한다.
+     */
+    private Filter.Expression buildRegionFilter(String sido) {
+        String regionKey = RegionMetadata.keyOfSido(sido);
+        if (regionKey == null) {
+            return null;
+        }
+        FilterExpressionBuilder b = new FilterExpressionBuilder();
+        return b.or(b.eq(regionKey, true), b.eq(RegionMetadata.NATIONWIDE_KEY, true)).build();
     }
 
     private String buildContext(List<Document> documents) {
