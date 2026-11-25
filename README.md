@@ -100,19 +100,20 @@ cd frontend && npm install && npm run dev
 ### 백엔드
 
 ```bash
-docker run -d -p 3307:3306 -e MYSQL_ROOT_PASSWORD=비밀번호 -e MYSQL_DATABASE=youth_link mysql:8
+cp .env.properties.example .env.properties
 ```
 
 ```bash
-docker run -d -p 8000:8000 chromadb/chroma
+./scripts/local-up.sh
 ```
 
 ```bash
 ./gradlew bootRun
 ```
 
-`.env.properties`에 `MYSQL_PASSWORD` · `GEMINI_API_KEY` · `YOUTH_CENTER_API_KEY` ·
-`JWT_SECRET` · `KAKAO_CLIENT_ID` · `KAKAO_CLIENT_SECRET`이 필요하다.
+`local-up.sh`가 MySQL·Chroma 컨테이너와 Chroma 초기 스키마까지 준비한다.
+Chroma 버전 고정, 컬렉션 선생성, 테넌트 이름 등 처음에 막히는 지점이 몇 군데 있어
+[docs/local-setup.md](docs/local-setup.md)에 따로 정리했다.
 API 문서는 `http://localhost:8080/swagger-ui.html`.
 
 ```bash
